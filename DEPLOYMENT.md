@@ -140,9 +140,6 @@ You can see deployment status in the Netlify dashboard.
 
 ## 🔐 Environment Variables Summary
 
-### Required in Netlify:
-- `VITE_SUPABASE_URL` - Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
 
 ### Required in Supabase Dashboard (Edge Functions):
 - `OPENAI_API_KEY` - Your OpenAI API key (for AI features)
