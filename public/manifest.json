@@ -1,0 +1,26 @@
+{
+  "name": "Diabet Assistant",
+  "short_name": "Diabet",
+  "description": "Your personal diabetes management companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#22c55e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/DiabetesManagement.jpg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/images/DiabetesManagement.jpg",
+      "sizes": "540x720",
+      "type": "image/svg+xml"
+    }
+  ]
+}
