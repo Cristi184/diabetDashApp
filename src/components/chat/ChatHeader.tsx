@@ -25,8 +25,9 @@ export function ChatHeader({ user }: ChatHeaderProps) {
         </AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <h2 className="font-semibold">{user.full_name || user.email}</h2>
-        <div className="flex items-center gap-2">
+        <h2 className="font-semibold">Chat with your patient</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{user.full_name || user.email}</p>
+        <div className="flex items-center gap-2 mt-1">
           {user.role && (
             <Badge variant="secondary" className="text-xs">
               {user.role}

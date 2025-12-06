@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus } from 'lucide-react';
 import { treatmentAPI } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCurrentLocalDateTime, localDateTimeToISO } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
 interface AddTreatmentDialogProps {
@@ -23,8 +24,16 @@ export default function AddTreatmentDialog({ onTreatmentAdded }: AddTreatmentDia
   const [medicationName, setMedicationName] = useState('');
   const [dose, setDose] = useState('');
   const [doseUnit, setDoseUnit] = useState('units');
-  const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
+  const [timestamp, setTimestamp] = useState(getCurrentLocalDateTime());
   const [notes, setNotes] = useState('');
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    // Reset timestamp to current local time when dialog opens
+    if (isOpen) {
+      setTimestamp(getCurrentLocalDateTime());
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +59,7 @@ export default function AddTreatmentDialog({ onTreatmentAdded }: AddTreatmentDia
         medication_name: treatmentType === 'pills' ? medicationName : undefined,
         dose: doseNum,
         dose_unit: treatmentType === 'insulin' ? 'units' : doseUnit,
-        timestamp: new Date(timestamp).toISOString(),
+        timestamp: localDateTimeToISO(timestamp),
         notes: notes || undefined,
       });
 
@@ -59,7 +68,7 @@ export default function AddTreatmentDialog({ onTreatmentAdded }: AddTreatmentDia
       setDose('');
       setNotes('');
       setMedicationName('');
-      setTimestamp(new Date().toISOString().slice(0, 16));
+      setTimestamp(getCurrentLocalDateTime());
       setTreatmentType('insulin');
       setInsulinType('rapid');
       setDoseUnit('units');
@@ -76,7 +85,7 @@ export default function AddTreatmentDialog({ onTreatmentAdded }: AddTreatmentDia
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />

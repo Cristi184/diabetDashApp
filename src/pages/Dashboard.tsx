@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { glucoseAPI, mealsAPI, labsAPI, treatmentAPI, messageAPI, type GlucoseReading, type Meal, type LabResult, type TreatmentLog } from '@/lib/supabase';
+import { formatChartDate, formatDateRange, formatTime, formatDateTime as formatDateTimeUtil, formatChartXAxis } from '@/lib/dateUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Activity, Utensils, FlaskConical, MessageSquare, Settings, TrendingUp, TrendingDown, Pill, Users, Mail, ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
@@ -256,31 +257,11 @@ export default function Dashboard() {
 
   const getTimeRangeLabel = () => {
     const { startTime, endTime } = getTimeWindow();
-    
-    if (timeRange === '1day') {
-      if (hourOffset === 0) {
-        return 'Today';
-      } else if (hourOffset === -1) {
-        return 'Yesterday';
-      } else {
-        return startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      }
-    } else {
-      const start = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const end = new Date(endTime.getTime() - 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      return `${start} - ${end}`;
-    }
+    return formatDateRange(startTime, endTime, timeRange, hourOffset);
   };
 
   const formatDateTime = (date: Date): string => {
-    if (timeRange === '1day') {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    } else if (timeRange === '1week') {
-      return date.toLocaleDateString('en-US', { weekday: 'short' }) + ' ' + 
-             date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
+    return formatChartDate(date, timeRange);
   };
 
   const getChartData = (): ChartDataPoint[] => {

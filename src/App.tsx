@@ -180,7 +180,7 @@ const App = () => (
               path="/app/doctor/chat"
               element={
                 <ProtectedRoute>
-                  <DoctorChat />
+                  <DoctorMessages />
                 </ProtectedRoute>
               }
             />

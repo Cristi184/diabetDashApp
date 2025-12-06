@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { MessageSquare, Send, Loader2, Bell, BellOff, ArrowLeft } from 'lucide-react';
 import { careRelationAPI, type CareRelation } from '@/lib/supabase';
 import { chatService, type ChatMessage } from '@/lib/chat';
+import { formatTime, formatListDate } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
 interface DoctorWithRelation extends CareRelation {
@@ -45,6 +46,12 @@ export default function Messages() {
   const handleNewMessage = useCallback((message: ChatMessage) => {
     console.log('🎯 Patient: handleNewMessage called with:', message.id);
     
+    // Only process messages relevant to current conversation
+    if (selectedDoctor && message.sender_id !== selectedDoctor.caregiver_id && message.receiver_id !== selectedDoctor.caregiver_id) {
+      console.log('⚠️ Patient: Message not for current conversation, skipping:', message.id);
+      return;
+    }
+    
     setMessages(prevMessages => {
       // Check if message already exists
       const exists = prevMessages.some(m => m.id === message.id);
@@ -57,7 +64,7 @@ export default function Messages() {
       const newMessages = [...prevMessages, message];
       
       // Mark as read if it's from the doctor
-      if (message.from_user_id !== user?.id) {
+      if (message.sender_id !== user?.id && message.sender_id === selectedDoctor?.caregiver_id) {
         console.log('📖 Patient: Marking message as read:', message.id);
         chatService.markAsRead([message.id]);
         
@@ -128,7 +135,7 @@ export default function Messages() {
 
     if ('Notification' in window && Notification.permission === 'granted') {
       const notification = new Notification(`New message from Dr. ${doctorName}`, {
-        body: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : ''),
+        body: message.message.substring(0, 100) + (message.message.length > 100 ? '...' : ''),
         icon: '/favicon.ico',
         badge: '/favicon.ico',
         tag: 'message-' + message.id,
@@ -170,15 +177,14 @@ export default function Messages() {
     try {
       const msgs = await chatService.loadConversation(
         user.id,
-        selectedDoctor.caregiver_id,
-        user.id
+        selectedDoctor.caregiver_id
       );
       console.log('📜 Patient: Setting', msgs.length, 'messages to state');
       setMessages(msgs);
 
       // Mark unread messages as read
       const unreadIds = msgs
-        .filter(m => m.to_user_id === user.id && !m.read)
+        .filter(m => m.receiver_id === user.id && !m.is_read)
         .map(m => m.id);
       
       if (unreadIds.length > 0) {
@@ -200,7 +206,6 @@ export default function Messages() {
       const sentMessage = await chatService.sendMessage(
         user.id,
         selectedDoctor.caregiver_id,
-        user.id,
         messageContent
       );
 
@@ -314,18 +319,18 @@ export default function Messages() {
                     messages.map((msg) => (
                       <div
                         key={msg.id}
-                        className={`flex ${msg.from_user_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
                           className={`max-w-md p-3 rounded-lg ${
-                            msg.from_user_id === user?.id
+                            msg.sender_id === user?.id
                               ? 'bg-blue-600 text-white'
                               : 'bg-slate-800 text-white'
                           }`}
                         >
-                          <p className="text-sm">{msg.content}</p>
+                          <p className="text-sm">{msg.message}</p>
                           <p className="text-xs opacity-70 mt-1">
-                            {new Date(msg.created_at).toLocaleTimeString()}
+                            {formatTime(msg.created_at)}
                           </p>
                         </div>
                       </div>

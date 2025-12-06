@@ -7,6 +7,7 @@ import { Plus, Camera, Sparkles, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { mealsAPI, uploadPhoto } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCurrentLocalDateTime, localDateTimeToISO } from '@/lib/dateUtils';
 import CameraCapture from './CameraCapture';
 import { supabase } from '@/lib/supabase';
 
@@ -32,12 +33,8 @@ export default function AddMealDialog({ onMealAdded }: AddMealDialogProps) {
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
-      // Set current date and time when dialog opens
-      const now = new Date();
-      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-      setDate(localDateTime);
+      // Set current local date and time when dialog opens
+      setDate(getCurrentLocalDateTime());
     } else {
       // Reset form when dialog closes
       setName('');
@@ -158,7 +155,7 @@ export default function AddMealDialog({ onMealAdded }: AddMealDialogProps) {
         fat: fat ? parseFloat(fat) : undefined,
         calories: calories ? parseInt(calories) : undefined,
         description: description || undefined,
-        date,
+        date: localDateTimeToISO(date),
         photo_url: photoUrl,
       });
 

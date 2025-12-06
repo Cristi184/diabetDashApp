@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { labsAPI, uploadPhoto } from '@/lib/supabase';
+import { getCurrentLocalDate } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,9 +38,17 @@ export default function AddLabDialog({ onAdd }: { onAdd: () => void }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [testName, setTestName] = useState('');
   const [value, setValue] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getCurrentLocalDate());
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [aiResults, setAiResults] = useState<AIDetectedResult[]>([]);
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    // Reset date to current local date when dialog opens
+    if (isOpen) {
+      setDate(getCurrentLocalDate());
+    }
+  };
 
   const handleImageCapture = (file: File) => {
     const reader = new FileReader();
@@ -251,13 +260,13 @@ export default function AddLabDialog({ onAdd }: { onAdd: () => void }) {
   const resetForm = () => {
     setTestName('');
     setValue('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(getCurrentLocalDate());
     setPendingImages([]);
     setAiResults([]);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-purple-600 hover:bg-purple-700">
           <Plus className="w-4 h-4 mr-2" />

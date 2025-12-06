@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { MessageSquare, Send, Loader2, Bell, BellOff } from 'lucide-react';
 import { careRelationAPI, type CareRelation } from '@/lib/supabase';
 import { chatService, type ChatMessage } from '@/lib/chat';
+import { formatTime, formatListDate } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 import DoctorLayout from '@/components/doctor/DoctorLayout';
 
@@ -20,6 +22,7 @@ interface PatientWithRelation extends CareRelation {
 
 export default function DoctorMessages() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<PatientWithRelation[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientWithRelation | null>(null);
@@ -38,11 +41,29 @@ export default function DoctorMessages() {
   useEffect(() => {
     loadPatients();
     requestNotificationPermission();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, searchParams]);
+
+  // Watch for changes in the patient URL parameter
+  useEffect(() => {
+    const patientIdParam = searchParams.get('patient');
+    if (patientIdParam && patients.length > 0) {
+      const patientFromUrl = patients.find(r => r.patient_id === patientIdParam);
+      if (patientFromUrl && selectedPatient?.patient_id !== patientIdParam) {
+        setSelectedPatient(patientFromUrl);
+      }
+    }
+  }, [searchParams, patients]);
 
   // Memoized callback to handle new messages
   const handleNewMessage = useCallback((message: ChatMessage) => {
     console.log('🎯 Doctor: handleNewMessage called with:', message.id);
+    
+    // Only process messages relevant to current conversation
+    if (selectedPatient && message.sender_id !== selectedPatient.patient_id && message.receiver_id !== selectedPatient.patient_id) {
+      console.log('⚠️ Doctor: Message not for current conversation, skipping:', message.id);
+      return;
+    }
     
     setMessages(prevMessages => {
       // Check if message already exists
@@ -56,7 +77,7 @@ export default function DoctorMessages() {
       const newMessages = [...prevMessages, message];
       
       // Mark as read if it's from the patient
-      if (message.from_user_id !== user?.id) {
+      if (message.sender_id !== user?.id && message.sender_id === selectedPatient?.patient_id) {
         console.log('📖 Doctor: Marking message as read:', message.id);
         chatService.markAsRead([message.id]);
         
@@ -77,7 +98,7 @@ export default function DoctorMessages() {
       
       // Subscribe to real-time messages
       const cleanup = chatService.subscribeToMessages(
-        selectedPatient.patient_id,
+        user.id,
         handleNewMessage
       );
 
@@ -124,7 +145,7 @@ export default function DoctorMessages() {
 
     if ('Notification' in window && Notification.permission === 'granted') {
       const notification = new Notification(`New message from ${patientName}`, {
-        body: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : ''),
+        body: message.message.substring(0, 100) + (message.message.length > 100 ? '...' : ''),
         icon: '/favicon.ico',
         badge: '/favicon.ico',
         tag: 'message-' + message.id,
@@ -149,7 +170,20 @@ export default function DoctorMessages() {
     try {
       const relations = await careRelationAPI.getAllForCaregiver(user.id);
       setPatients(relations);
-      if (relations.length > 0 && !selectedPatient) {
+      
+      // Check if there's a patient parameter in the URL
+      const patientIdParam = searchParams.get('patient');
+      if (patientIdParam && relations.length > 0) {
+        // Find and select the patient from the URL parameter
+        const patientFromUrl = relations.find(r => r.patient_id === patientIdParam);
+        if (patientFromUrl) {
+          setSelectedPatient(patientFromUrl);
+        } else if (relations.length > 0 && !selectedPatient) {
+          // If patient not found but we have relations, select first one
+          setSelectedPatient(relations[0]);
+        }
+      } else if (relations.length > 0 && !selectedPatient) {
+        // No patient parameter, select first patient
         setSelectedPatient(relations[0]);
       }
     } catch (error) {
@@ -166,7 +200,6 @@ export default function DoctorMessages() {
     try {
       const msgs = await chatService.loadConversation(
         user.id,
-        selectedPatient.patient_id,
         selectedPatient.patient_id
       );
       console.log('📜 Doctor: Setting', msgs.length, 'messages to state');
@@ -174,7 +207,7 @@ export default function DoctorMessages() {
 
       // Mark unread messages as read
       const unreadIds = msgs
-        .filter(m => m.to_user_id === user.id && !m.read)
+        .filter(m => m.receiver_id === user.id && !m.is_read)
         .map(m => m.id);
       
       if (unreadIds.length > 0) {
@@ -195,7 +228,6 @@ export default function DoctorMessages() {
     try {
       const sentMessage = await chatService.sendMessage(
         user.id,
-        selectedPatient.patient_id,
         selectedPatient.patient_id,
         messageContent
       );
@@ -293,25 +325,25 @@ export default function DoctorMessages() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length > 0 ? (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.from_user_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                    >
+                    messages.map((msg) => (
                       <div
-                        className={`max-w-md p-3 rounded-lg ${
-                          msg.from_user_id === user?.id
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-800 text-white'
-                        }`}
+                        key={msg.id}
+                        className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="text-sm">{msg.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {new Date(msg.created_at).toLocaleTimeString()}
-                        </p>
+                        <div
+                          className={`max-w-md p-3 rounded-lg ${
+                            msg.sender_id === user?.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-800 text-white'
+                          }`}
+                        >
+                          <p className="text-sm">{msg.message}</p>
+                          <p className="text-xs opacity-70 mt-1">
+                            {formatTime(msg.created_at)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className="text-center text-slate-400 py-8">
                     No messages yet. Start the conversation!

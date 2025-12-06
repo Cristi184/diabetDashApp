@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get Supabase configuration from environment variables with fallback to hardcoded values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bxhrkgyfpepniulhvgqh.supabase.co';
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bxhrkgyfpepniulhvgqh.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4aHJrZ3lmcGVwbml1bGh2Z3FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NTI3MzcsImV4cCI6MjA3OTEyODczN30.nNw_tRgp7Tyltqd1jYFPNuB0M0WOLWght5_7PIn_1E8';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

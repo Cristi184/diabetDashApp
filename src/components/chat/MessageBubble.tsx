@@ -1,8 +1,8 @@
-import { DirectMessage } from '@/lib/supabase';
+import { ChatMessage } from '@/lib/chat';
 import { format } from 'date-fns';
 
 interface MessageBubbleProps {
-  message: DirectMessage;
+  message: ChatMessage;
   isOwn: boolean;
 }
 

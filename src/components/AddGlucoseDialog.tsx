@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { glucoseAPI } from '@/lib/supabase';
+import { getCurrentLocalDateTime, localDateTimeToISO } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -17,15 +18,15 @@ export default function AddGlucoseDialog({ onAdd }: AddGlucoseDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
+  const [date, setDate] = useState(getCurrentLocalDateTime());
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
-    // Reset date to current time when dialog opens
+    // Reset date to current local time when dialog opens
     if (newOpen) {
-      setDate(new Date().toISOString().slice(0, 16));
+      setDate(getCurrentLocalDateTime());
     }
   };
 
@@ -47,13 +48,13 @@ export default function AddGlucoseDialog({ onAdd }: AddGlucoseDialogProps) {
       await glucoseAPI.create({
         user_id: user.id,
         value: parseInt(value),
-        date: new Date(date).toISOString(),
+        date: localDateTimeToISO(date),
         notes: notes || undefined,
       });
 
       toast.success('Glucose reading added!');
       setValue('');
-      setDate(new Date().toISOString().slice(0, 16));
+      setDate(getCurrentLocalDateTime());
       setNotes('');
       setOpen(false);
       onAdd();

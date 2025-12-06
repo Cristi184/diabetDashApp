@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { DirectMessage } from '@/lib/supabase';
+import { ChatMessage } from '@/lib/chat';
 import { MessageBubble } from './MessageBubble';
 import { format, isToday, isYesterday } from 'date-fns';
 
 interface MessageListProps {
-  messages: DirectMessage[];
+  messages: ChatMessage[];
   currentUserId: string;
 }
 
